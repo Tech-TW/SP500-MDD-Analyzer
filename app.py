@@ -17,27 +17,26 @@ def calculate_mdd(start_date="1955-01-01"):
     percentile = (daily_data['Max Drawdown'] < current_mdd).mean() * 100
     return daily_data, annual_data, current_mdd, percentile
 
-st.set_page_config(page_title="S&P 500 最大跌幅分析", layout="wide")
-st.title("📉 S&P 500 最大跌幅分析工具")
-start_date = st.date_input("選擇起始日期", value=pd.to_datetime("1955-01-01"))
+st.set_page_config(page_title="S&P 500 Max Drawdown Analysis", layout="wide")
+st.title("📉 S&P 500 Max Drawdown Analysis Tool")
+start_date = st.date_input("Select start date", value=pd.to_datetime("1955-01-01"))
 
-if st.button("開始分析"):
-    with st.spinner("抓取資料與分析中..."):
-        daily_data, annual_data, current_mdd, percentile = calculate_mdd(start_date=start_date)
-    st.success("分析完成！")
+# Always calculate and display charts and stats on page load
+daily_data, annual_data, current_mdd, percentile = calculate_mdd(start_date=start_date)
 
-    st.subheader("📊 每日最大跌幅")
-    st.line_chart(daily_data['Max Drawdown'])
+st.subheader("📊 Daily Maximum Drawdown")
+st.line_chart(daily_data['Max Drawdown'])
 
-    st.subheader("📆 年度最大跌幅")
-    st.bar_chart(data=annual_data.set_index(annual_data['Date'].dt.year)['Max Drawdown'])
+st.subheader("📆 Annual Maximum Drawdown")
+st.bar_chart(data=annual_data.set_index(annual_data['Date'].dt.year)['Max Drawdown'])
 
-    st.subheader("🧮 統計結果")
-    st.write(f"目前最大跌幅：**{current_mdd:.2%}**")
-    st.write(f"歷史分位數：**{percentile:.2f}%**")
-    if percentile <= 10:
-        st.warning("📉 現在處於歷史極端跌幅（前10%）——進場機會可能較佳")
-    elif percentile <= 30:
-        st.info("🔍 現在處於相對較大跌幅區間（前30%）——可觀察潛在機會")
-    else:
-        st.success("📈 現在市場尚未進入明顯下跌區間——進場需更謹慎")
+st.subheader("🧮 Statistical Summary")
+st.write(f"Current Maximum Drawdown: **{current_mdd:.2%}**")
+st.write(f"Historical Percentile: **{percentile:.2f}%**")
+
+if percentile <= 10:
+    st.warning("📉 The market is in an extreme drawdown (bottom 10%) — possible buying opportunity")
+elif percentile <= 30:
+    st.info("🔍 The market is in a relatively large drawdown (bottom 30%) — potential opportunity")
+else:
+    st.success("📈 The market is not in a major drawdown — proceed with caution")
