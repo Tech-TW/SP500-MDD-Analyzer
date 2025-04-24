@@ -25,27 +25,27 @@ st.title("📉 S&P 500 Max Drawdown Analysis Tool")
 start_date = st.date_input("Select start date", value=pd.to_datetime("1955-01-01"))
 daily_data, annual_data, current_mdd, percentile = calculate_mdd(start_date=start_date)
 
-# 折線圖：每日最大跌幅 + 水平線
+# 折線圖：每日最大跌幅 + 當前水位線
 st.subheader("📊 Daily Maximum Drawdown")
-fig1, ax1 = plt.subplots(figsize=(12, 4))
-ax1.plot(daily_data.index, daily_data['Max Drawdown'], label='Daily Max Drawdown')
-ax1.axhline(y=current_mdd, color='red', linestyle='--', label=f'Current MDD: {current_mdd:.2%}')
-ax1.set_title("Daily Max Drawdown with Current MDD Line")
+fig1, ax1 = plt.subplots(figsize=(14, 4))
+ax1.plot(daily_data.index, daily_data['Max Drawdown'], color='blue', linewidth=1.5, label="Max Drawdown")
+ax1.axhline(y=current_mdd, color='red', linestyle='--', linewidth=1.2, label=f'Current MDD: {current_mdd:.2%}')
 ax1.set_ylabel("Drawdown")
+ax1.set_title("Daily Max Drawdown")
 ax1.legend()
-ax1.grid(True)
+ax1.grid(alpha=0.3)
 st.pyplot(fig1)
 
-# 長條圖：年度最大跌幅 + 水平線
+# 長條圖：年度最大跌幅 + 當前水位線
 st.subheader("📆 Annual Maximum Drawdown")
-fig2, ax2 = plt.subplots(figsize=(12, 4))
+fig2, ax2 = plt.subplots(figsize=(14, 4))
 years = annual_data['Date'].dt.year
-ax2.bar(years, annual_data['Max Drawdown'], label='Annual Max Drawdown')
-ax2.axhline(y=current_mdd, color='red', linestyle='--', label=f'Current MDD: {current_mdd:.2%}')
-ax2.set_title("Annual Max Drawdown with Current MDD Line")
+ax2.bar(years, annual_data['Max Drawdown'], color='skyblue', label="Annual Max Drawdown")
+ax2.axhline(y=current_mdd, color='red', linestyle='--', linewidth=1.2, label=f'Current MDD: {current_mdd:.2%}')
 ax2.set_ylabel("Drawdown")
+ax2.set_title("Annual Max Drawdown")
 ax2.legend()
-ax2.grid(True)
+ax2.grid(alpha=0.3)
 st.pyplot(fig2)
 
 # 統計數據與說明
