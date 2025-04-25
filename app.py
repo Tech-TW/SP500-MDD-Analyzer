@@ -1,9 +1,9 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+import altair as alt
 
+# 共用最大跌幅計算函數
 def calculate_mdd(ticker="^GSPC", start_date="1955-01-01"):
     data = yf.download(ticker, start=start_date, progress=False)
     data = data['Close'].resample('D').ffill()
@@ -16,67 +16,102 @@ def calculate_mdd(ticker="^GSPC", start_date="1955-01-01"):
     percentile = (daily_data['Max Drawdown'] < current_mdd).mean() * 100
     return daily_data, annual_data, current_mdd, percentile
 
-# Create a function to add annotation on the plot
-def add_annotation(ax, x, y, label):
-    ax.annotate(f"{label:.2%}", xy=(x, y), xytext=(x, y + 0.02),
-                arrowprops=dict(arrowstyle="->", lw=1.5), color='red',
-                fontsize=12, ha='center', va='bottom')
-
+# 初始化 Streamlit
 st.set_page_config(page_title="Max Drawdown Analysis", layout="wide")
 st.title("📉 Global Index Max Drawdown Analysis Tool")
 
-# ==== S&P 500 區塊 ====
+# ========= S&P 500 區塊 =========
 st.header("🇺🇸 S&P 500")
 start_date_spx = st.date_input("Select start date for S&P 500", value=pd.to_datetime("1955-01-01"), key="spx_date")
-daily_data_spx, annual_data_spx, current_mdd_spx, percentile_spx = calculate_mdd("^GSPC", start_date=start_date_spx)
+daily_spx, annual_spx, mdd_spx, pct_spx = calculate_mdd("^GSPC", start_date=start_date_spx)
+
+# 每日 MDD 折線圖 + 當前值
+daily_chart_spx = alt.Chart(daily_spx.reset_index()).mark_line().encode(
+    x='Date:T',
+    y=alt.Y('Max Drawdown:Q', scale=alt.Scale(domain=[-1, 0]))
+)
+
+rule_spx = alt.Chart(pd.DataFrame({'y': [mdd_spx]})).mark_rule(color='red', strokeDash=[4, 4]).encode(y='y:Q')
+
+label_spx = alt.Chart(pd.DataFrame({
+    'y': [mdd_spx],
+    'label': [f"Current: {mdd_spx:.2%}"]
+})).mark_text(align='left', dx=5, dy=-10, color='red').encode(
+    x=alt.value(daily_spx.index[-1].to_pydatetime()),
+    y='y:Q',
+    text='label:N'
+)
 
 st.subheader("📊 Daily Maximum Drawdown - S&P 500")
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(daily_data_spx.index, daily_data_spx['Max Drawdown'], label="Max Drawdown")
-add_annotation(ax, daily_data_spx.index[-1], current_mdd_spx, current_mdd_spx)  # Add annotation for latest MDD
-st.pyplot(fig)
+st.altair_chart(daily_chart_spx + rule_spx + label_spx, use_container_width=True)
+
+# 年度 MDD 長條圖 + 當前值
+annual_chart_spx = alt.Chart(annual_spx).mark_bar().encode(
+    x=alt.X('year(Date):O', title="Year"),
+    y=alt.Y('Max Drawdown:Q', scale=alt.Scale(domain=[-1, 0]))
+)
+
+rule_annual_spx = alt.Chart(pd.DataFrame({'y': [mdd_spx]})).mark_rule(color='red', strokeDash=[4, 4]).encode(y='y:Q')
 
 st.subheader("📆 Annual Maximum Drawdown - S&P 500")
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.bar(annual_data_spx['Date'].dt.year, annual_data_spx['Max Drawdown'], label="Annual Max Drawdown", color='skyblue')
-add_annotation(ax, annual_data_spx['Date'].dt.year[-1], annual_data_spx['Max Drawdown'].iloc[-1], annual_data_spx['Max Drawdown'].iloc[-1])  # Add annotation for latest MDD
-st.pyplot(fig)
+st.altair_chart(annual_chart_spx + rule_annual_spx, use_container_width=True)
 
+# 統計資料
 st.subheader("🧮 Statistical Summary - S&P 500")
-st.write(f"Current Maximum Drawdown: **{current_mdd_spx:.2%}**")
-st.write(f"Historical Percentile: **{percentile_spx:.2f}%**")
+st.write(f"Current Maximum Drawdown: **{mdd_spx:.2%}**")
+st.write(f"Historical Percentile: **{pct_spx:.2f}%**")
 
-if percentile_spx <= 10:
+if pct_spx <= 10:
     st.warning("📉 The S&P 500 is in an extreme drawdown (bottom 10%) — possible buying opportunity")
-elif percentile_spx <= 30:
+elif pct_spx <= 30:
     st.info("🔍 The S&P 500 is in a relatively large drawdown (bottom 30%) — potential opportunity")
 else:
     st.success("📈 The S&P 500 is not in a major drawdown — proceed with caution")
 
-# ==== 台灣加權指數 區塊 ====
+# ========= TWII 區塊 =========
 st.header("🇹🇼 Taiwan Weighted Index")
 start_date_twii = st.date_input("Select start date for Taiwan Weighted Index", value=pd.to_datetime("1990-01-01"), key="twii_date")
-daily_data_twii, annual_data_twii, current_mdd_twii, percentile_twii = calculate_mdd("^TWII", start_date=start_date_twii)
+daily_twii, annual_twii, mdd_twii, pct_twii = calculate_mdd("^TWII", start_date=start_date_twii)
+
+# 每日 MDD 折線圖 + 當前值
+daily_chart_twii = alt.Chart(daily_twii.reset_index()).mark_line().encode(
+    x='Date:T',
+    y=alt.Y('Max Drawdown:Q', scale=alt.Scale(domain=[-1, 0]))
+)
+
+rule_twii = alt.Chart(pd.DataFrame({'y': [mdd_twii]})).mark_rule(color='red', strokeDash=[4, 4]).encode(y='y:Q')
+
+label_twii = alt.Chart(pd.DataFrame({
+    'y': [mdd_twii],
+    'label': [f"Current: {mdd_twii:.2%}"]
+})).mark_text(align='left', dx=5, dy=-10, color='red').encode(
+    x=alt.value(daily_twii.index[-1].to_pydatetime()),
+    y='y:Q',
+    text='label:N'
+)
 
 st.subheader("📊 Daily Maximum Drawdown - TWII")
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(daily_data_twii.index, daily_data_twii['Max Drawdown'], label="Max Drawdown")
-add_annotation(ax, daily_data_twii.index[-1], current_mdd_twii, current_mdd_twii)  # Add annotation for latest MDD
-st.pyplot(fig)
+st.altair_chart(daily_chart_twii + rule_twii + label_twii, use_container_width=True)
+
+# 年度 MDD 長條圖 + 當前值
+annual_chart_twii = alt.Chart(annual_twii).mark_bar().encode(
+    x=alt.X('year(Date):O', title="Year"),
+    y=alt.Y('Max Drawdown:Q', scale=alt.Scale(domain=[-1, 0]))
+)
+
+rule_annual_twii = alt.Chart(pd.DataFrame({'y': [mdd_twii]})).mark_rule(color='red', strokeDash=[4, 4]).encode(y='y:Q')
 
 st.subheader("📆 Annual Maximum Drawdown - TWII")
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.bar(annual_data_twii['Date'].dt.year, annual_data_twii['Max Drawdown'], label="Annual Max Drawdown", color='skyblue')
-add_annotation(ax, annual_data_twii['Date'].dt.year[-1], annual_data_twii['Max Drawdown'].iloc[-1], annual_data_twii['Max Drawdown'].iloc[-1])  # Add annotation for latest MDD
-st.pyplot(fig)
+st.altair_chart(annual_chart_twii + rule_annual_twii, use_container_width=True)
 
+# 統計資料
 st.subheader("🧮 Statistical Summary - TWII")
-st.write(f"Current Maximum Drawdown: **{current_mdd_twii:.2%}**")
-st.write(f"Historical Percentile: **{percentile_twii:.2f}%**")
+st.write(f"Current Maximum Drawdown: **{mdd_twii:.2%}**")
+st.write(f"Historical Percentile: **{pct_twii:.2f}%**")
 
-if percentile_twii <= 10:
+if pct_twii <= 10:
     st.warning("📉 The Taiwan Weighted Index is in an extreme drawdown (bottom 10%) — possible buying opportunity")
-elif percentile_twii <= 30:
+elif pct_twii <= 30:
     st.info("🔍 The Taiwan Weighted Index is in a relatively large drawdown (bottom 30%) — potential opportunity")
 else:
     st.success("📈 The Taiwan Weighted Index is not in a major drawdown — proceed with caution")
